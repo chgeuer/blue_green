@@ -1,7 +1,10 @@
 defmodule BlueGreen.Orchestrator do
   @moduledoc """
-  Manages the TCP listener on port 4000 and coordinates blue/green deployments
+  Manages the TCP listener and coordinates blue/green deployments
   using :peer nodes and SCM_RIGHTS FD passing.
+
+  The listen port is read from the `PORT` environment variable,
+  falling back to 4000 when unset.
 
   ## Usage
 
@@ -11,7 +14,7 @@ defmodule BlueGreen.Orchestrator do
   use GenServer
   require Logger
 
-  @tcp_port 4000
+  @default_port 4000
 
   defstruct [
     :listen_socket,
@@ -31,13 +34,15 @@ defmodule BlueGreen.Orchestrator do
 
   @impl true
   def init(_opts) do
-    {:ok, lsock} = :gen_tcp.listen(@tcp_port, [
+    tcp_port = port_from_env()
+
+    {:ok, lsock} = :gen_tcp.listen(tcp_port, [
       :binary,
       active: false,
       reuseaddr: true,
       packet: :line
     ])
-    Logger.info("[Orchestrator] Listening on TCP port #{@tcp_port}")
+    Logger.info("[Orchestrator] Listening on TCP port #{tcp_port}")
 
     # Start v1 peer node (no receiver yet — waits for a client)
     {peer, node} = start_peer_node(1)
@@ -154,5 +159,12 @@ defmodule BlueGreen.Orchestrator do
 
   defp uds_path_for(version) do
     "/tmp/blue_green_v#{version}_#{System.pid()}.sock"
+  end
+
+  defp port_from_env do
+    case System.get_env("PORT") do
+      nil -> @default_port
+      val -> String.to_integer(val)
+    end
   end
 end

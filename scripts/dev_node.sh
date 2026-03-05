@@ -9,6 +9,7 @@ HOSTNAME="$(hostname -s)"
 FQDN="${APP_NAME}@${HOSTNAME}"
 PIDFILE="${PROJECT_DIR}/.dev_node.pid"
 LOGFILE="${PROJECT_DIR}/.dev_node.log"
+export PORT="${PORT:-4000}"
 
 case "${1:-help}" in
   start)

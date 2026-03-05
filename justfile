@@ -1,6 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-dev := "scripts/dev_node.sh"
+export PORT := `phx-port`
+dev          := "scripts/dev_node.sh"
 
 # List available tasks
 default:
@@ -41,7 +42,7 @@ rpc *EXPR:
 
 # Connect the test client (run in a second terminal)
 client:
-    elixir test_client.exs
+    PORT={{PORT}} elixir test_client.exs
 
 # Trigger the hot upgrade v1 → v2
 upgrade:

@@ -4,10 +4,13 @@
 # and prints responses to show the VERSION transition.
 
 defmodule TestClient do
-  def run do
-    IO.puts("[Client] Connecting to localhost:4000...")
+  @default_port 4000
 
-    case :gen_tcp.connect({127, 0, 0, 1}, 4000, [:binary, active: false, packet: :line]) do
+  def run do
+    port = port_from_env()
+    IO.puts("[Client] Connecting to localhost:#{port}...")
+
+    case :gen_tcp.connect({127, 0, 0, 1}, port, [:binary, active: false, packet: :line]) do
       {:ok, sock} ->
         IO.puts("[Client] Connected!")
         loop(sock, 1)
@@ -25,7 +28,7 @@ defmodule TestClient do
     msg = "ping #{n}\n"
     case :gen_tcp.send(sock, msg) do
       :ok ->
-        case :gen_tcp.recv(sock, 0, 5_000) do
+        case :gen_tcp.recv(sock, 0, to_timeout(second: 5)) do
           {:ok, data} ->
             IO.puts("[Client] ##{n} -> #{String.trim(data)}")
             Process.sleep(2_000)
@@ -37,6 +40,13 @@ defmodule TestClient do
 
       {:error, reason} ->
         IO.puts("[Client] Send error: #{inspect(reason)}")
+    end
+  end
+
+  defp port_from_env do
+    case System.get_env("PORT") do
+      nil -> @default_port
+      val -> String.to_integer(val)
     end
   end
 end
