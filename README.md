@@ -38,6 +38,7 @@ two Elixir BEAM nodes using Linux `SCM_RIGHTS` file descriptor passing.
 - Elixir ~> 1.20 / OTP 28
 - Rust (for compiling the Rustler NIF)
 - Linux (SCM_RIGHTS is a Unix feature)
+- [`phx-port`](https://github.com/chgeuer/phx-port) — stable per-project port assignments (optional; falls back to 4000)
 
 ## Quick Start
 
@@ -45,14 +46,18 @@ two Elixir BEAM nodes using Linux `SCM_RIGHTS` file descriptor passing.
 # Compile
 mix deps.get && mix compile
 
-# Terminal 1: Start the orchestrator (auto-upgrades after 20s)
-elixir --sname demo -S mix run -e '
-BlueGreen.Orchestrator.start_link()
-spawn(fn -> Process.sleep(20_000); BlueGreen.Orchestrator.upgrade() end)
-Process.sleep(:infinity)
-'
+# Start the BEAM node (orchestrator auto-starts on TCP port from phx-port)
+just start
 
-# Terminal 2: Run the test client
+# In another terminal: connect the test client
+just client
+
+# In a third terminal: trigger the hot upgrade
+just upgrade
+
+# Or run the full demo in one terminal
+just auto
+```
 elixir test_client.exs
 ```
 
@@ -75,4 +80,62 @@ You'll see:
 | Avoid killing connection on close | Don't call `gen_tcp.close` or `:socket.close` — just leak the FD |
 | Non-blocking handler for handoff | `:socket.recv/3` with `:nowait` + select messages |
 
+## The "Relay Race" Deployment: Understanding Hot Blue-Green Deploys in Elixir
 
+In the world of DevOps, we've been conditioned to accept a certain level of violence during deployments. We "kill" containers, "drain" nodes, and "terminate" instances. Even with modern orchestrators like Kubernetes, a deployment is essentially a high-speed replacement: out with the old, in with the new, and hope the load balancer handles the handoff gracefully.
+
+But what if you didn't have to kill anything? What if your new code could simply "step into" the existing network connections of the old code, like a relay runner taking a baton at full speed?
+
+This is the "Hot Blue-Green" deployment pattern—a technique that leverages the unique architecture of the Erlang Virtual Machine (BEAM) to achieve zero-downtime upgrades without dropping a single TCP packet.
+
+---
+
+### The Secret Sauce: The VM within a VM
+
+Most runtimes are guests on the Operating System. The BEAM, however, acts like a distributed OS itself. Using the `:peer` module, a running Elixir application can spawn a second, independent VM instance as a child process.
+
+In a modern setting (like the Fly.io environment mentioned in the original tweets), your "Primary" node acts as a thin **Control Plane**. It doesn't run your web server; it manages the workers that do.
+
+When you want to deploy version 2.0:
+
+1. The Parent node boots a **Peer VM** (the "Green" node).
+2. The Parent tells the Green node to load the new code and start its supervisor tree.
+3. Both VMs are clustered, meaning they share a "brain" and can send data to each other with negligible latency.
+
+---
+
+### The "Impossible" Trick: SCM_RIGHTS
+
+Here is where it gets technical. Usually, a TCP connection is a "file" owned by a specific OS process ID (PID). If that PID dies, the connection dies.
+
+To solve this, Elixir developers use a Unix syscall called `sendmsg` with the `SCM_RIGHTS` flag. This allows one OS process to literally "pass" a file descriptor (the handle for the TCP socket) to another process on the same machine.
+
+1. **The Handover:** The Old VM (Blue) reaches a "quiescence" state. It stops accepting new requests but holds its open sockets.
+2. **The Pass:** Through a Unix Domain Socket, Blue sends the file descriptors of every active user connection to the New VM (Green).
+3. **The Adoption:** Green receives these integers, wraps them back into Erlang sockets, and resumes the logic using Version 2.0 of the code.
+
+The client on the other end of the wire sees absolutely nothing. No disconnect, no 503 error, no "reconnecting..." spinner. Just a seamless transition to the new logic.
+
+---
+
+### Why This Matters Today
+
+You might ask: *"Why bother when I have Kubernetes and Load Balancers?"* Standard Blue-Green deployments at the infrastructure level are "cold." The load balancer shifts traffic, but existing connections are usually severed or left to "drain" (which can take minutes). This is a nightmare for:
+
+* **Stateful Applications:** Collaborative editors (like Figma or Livebook) where users have active sessions in memory.
+* **Long-lived Connections:** Gaming servers, IoT command-and-control, or high-frequency trading feeds.
+* **Low-Power Edge Devices:** Where a full container restart is too heavy for the hardware.
+
+### Modern Setting: The Edge
+
+We are seeing a shift toward "intelligent edges." Platform providers like Fly.io allow you to run these nodes extremely close to the user. By using Hot Blue-Green deploys on the edge, you can update your global application logic in milliseconds.
+
+Because the Parent node handles the orchestration, you can even perform **State Handoff**. Since the Blue and Green nodes are clustered, Blue can serialize a user's current session state and send it to Green over the Erlang distribution protocol *at the same time* it hands over the TCP socket.
+
+---
+
+### Summary: The New Standard for Reliability
+
+The Elixir ecosystem continues to prove that "old" telecom-grade reliability is the ultimate "modern" feature. By treating the VM as a fleet of manageable peers rather than a monolithic process, we can move away from the "kill and restart" mentality and toward a more fluid, continuous evolution of running code.
+
+It's not just a deployment; it's a seamless evolution.
