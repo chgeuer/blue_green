@@ -6,7 +6,7 @@ two Elixir BEAM nodes using Linux `SCM_RIGHTS` file descriptor passing.
 ## Architecture
 
 ```
-  TCP Client <──TCP:4000──> Orchestrator (main BEAM node)
+  TCP Client <──TCP:$PORT──> Orchestrator (main BEAM node)
                                   │
                     ┌─────────────┴─────────────┐
                     │                           │
@@ -17,19 +17,20 @@ two Elixir BEAM nodes using Linux `SCM_RIGHTS` file descriptor passing.
                            (FD handoff)
 ```
 
-- **Orchestrator** — Listens TCP:4000, accepts clients, manages `:peer` child nodes
+- **Orchestrator** — Listens on `$PORT` (via [`phx-port`](https://github.com/chgeuer/phx-port), defaults to 4000), accepts clients, manages `:peer` child nodes
 - **Handler** — GenServer on each peer that owns a client socket and echoes with a version tag
 - **Rust NIF** — `send_fd`/`recv_fd` over Unix Domain Sockets using `SCM_RIGHTS` ancillary data
 
 ## How It Works
 
-1. Orchestrator boots, spawns **v1** as a separate OS process (`:peer`)
-2. Client connects → orchestrator extracts the raw FD, sends it to v1 via UDS
-3. v1 wraps the FD with `:socket.open/2`, echoes `"VERSION 1: ..."`
-4. `Orchestrator.upgrade()` is called:
+1. Orchestrator boots inside the application supervisor, spawns **v1** as a separate OS process (`:peer`)
+2. Client connects → orchestrator extracts the raw FD via `:prim_inet.getfd/1`, sends it to v1 via UDS + SCM_RIGHTS NIF
+3. v1 wraps the FD with `:socket.open/2`, echoes `"VERSION 1: ..."` using non-blocking select
+4. `BlueGreen.Orchestrator.upgrade()` is called (e.g. via `just upgrade`):
    - Spawns **v2** peer node
-   - v1 sends the FD to v2 via UDS (`SCM_RIGHTS` duplicates the FD across processes)
-   - v2 wraps it, starts echoing `"VERSION 2: ..."`
+   - v2 starts a UDS receiver (dirty NIF, blocks until FD arrives)
+   - Orchestrator tells v1's Handler to hand off: v1 sends its FD to v2 via UDS
+   - v2 wraps the FD, starts echoing `"VERSION 2: ..."`
    - v1 peer is stopped
 5. **Client never sees a disconnect** — the TCP connection survives the handoff
 
@@ -57,8 +58,6 @@ just upgrade
 
 # Or run the full demo in one terminal
 just auto
-```
-elixir test_client.exs
 ```
 
 You'll see:
@@ -98,9 +97,9 @@ In a modern setting (like the Fly.io environment mentioned in the original tweet
 
 When you want to deploy version 2.0:
 
-1. The Parent node boots a **Peer VM** (the "Green" node).
-2. The Parent tells the Green node to load the new code and start its supervisor tree.
-3. Both VMs are clustered, meaning they share a "brain" and can send data to each other with negligible latency.
+1. The Parent node boots a **Peer VM** (the "Green" node) via OTP's `:peer` module. The new VM inherits the same code paths, so it can immediately run the latest compiled modules.
+2. The Parent orchestrates the FD handoff from the old Handler to the new one.
+3. Both VMs are clustered via Erlang distribution, so the Parent can call functions on either peer with `:erpc` — negligible latency, full introspection.
 
 ---
 
@@ -108,11 +107,11 @@ When you want to deploy version 2.0:
 
 Here is where it gets technical. Usually, a TCP connection is a "file" owned by a specific OS process ID (PID). If that PID dies, the connection dies.
 
-To solve this, Elixir developers use a Unix syscall called `sendmsg` with the `SCM_RIGHTS` flag. This allows one OS process to literally "pass" a file descriptor (the handle for the TCP socket) to another process on the same machine.
+To solve this, we use a Unix syscall called `sendmsg` with the `SCM_RIGHTS` flag, wrapped in a [Rustler](https://github.com/rusterlium/rustler) NIF for safe integration with the BEAM. This allows one OS process to literally "pass" a file descriptor (the handle for the TCP socket) to another process on the same machine.
 
-1. **The Handover:** The Old VM (Blue) reaches a "quiescence" state. It stops accepting new requests but holds its open sockets.
-2. **The Pass:** Through a Unix Domain Socket, Blue sends the file descriptors of every active user connection to the New VM (Green).
-3. **The Adoption:** Green receives these integers, wraps them back into Erlang sockets, and resumes the logic using Version 2.0 of the code.
+1. **The Handover:** The Old VM (Blue) reaches a "quiescence" state. Its Handler GenServer holds the open socket and stops processing new data.
+2. **The Pass:** The Handler sends the file descriptor of the active client connection to the New VM (Green) through a Unix Domain Socket using the Rust NIF.
+3. **The Adoption:** Green receives the integer FD, wraps it back into an Erlang `:socket` reference via `:socket.open/2`, and resumes the echo logic using Version 2.0 of the code.
 
 The client on the other end of the wire sees absolutely nothing. No disconnect, no 503 error, no "reconnecting..." spinner. Just a seamless transition to the new logic.
 
