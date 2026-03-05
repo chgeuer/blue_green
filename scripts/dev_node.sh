@@ -35,17 +35,32 @@ case "${1:-help}" in
     ;;
 
   stop)
-    if [ -f "$PIDFILE" ]; then
-      kill "$(cat "$PIDFILE")" 2>/dev/null && echo "Node stopped" || echo "Node was not running"
+    # Graceful shutdown via BEAM introspection — no pidfile needed
+    if elixir --sname "stop_$$" --cookie "$COOKIE" --no-halt -e "
+      target = :\"${FQDN}\"
+      case Node.connect(target) do
+        true -> :rpc.call(target, System, :halt, [0]); System.halt(0)
+        _    -> System.halt(1)
+      end
+    " 2>/dev/null; then
+      echo "Node stopped"
       rm -f "$PIDFILE"
     else
-      echo "No pidfile found"
+      echo "Node not running"
+      rm -f "$PIDFILE" 2>/dev/null
     fi
     ;;
 
   status)
-    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
-      echo "Node running (pid $(cat "$PIDFILE"))"
+    # Check liveness via BEAM introspection, pidfile is just a hint
+    if elixir --sname "status_$$" --cookie "$COOKIE" --no-halt -e "
+      target = :\"${FQDN}\"
+      case Node.connect(target) do
+        true -> IO.puts(\"Node #{target} is running\"); System.halt(0)
+        _    -> System.halt(1)
+      end
+    " 2>/dev/null; then
+      :
     else
       echo "Node not running"
       rm -f "$PIDFILE" 2>/dev/null
