@@ -25,3 +25,7 @@ blue_green-*.tar
 # Rust build artifacts
 /native/socket_handoff/target/
 
+# Dev node runtime files
+.dev_node.pid
+.dev_node.log
+

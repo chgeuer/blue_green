@@ -130,10 +130,11 @@ defmodule BlueGreen.Orchestrator do
   defp start_peer_node(version) do
     code_paths = :code.get_path()
     pa_args = Enum.flat_map(code_paths, fn p -> [~c"-pa", p] end)
+    cookie_args = [~c"-setcookie", Atom.to_charlist(:erlang.get_cookie())]
 
     {:ok, peer, node} = :peer.start(%{
       name: String.to_atom("v#{version}"),
-      args: pa_args,
+      args: pa_args ++ cookie_args,
       connection: :standard_io
     })
 
