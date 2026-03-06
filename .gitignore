@@ -25,6 +25,9 @@ blue_green-*.tar
 # Rust build artifacts
 /native/socket_handoff/target/
 
+# Compiled NIF shared object (built by Rustler)
+/priv/native/
+
 # Dev node runtime files
 .dev_node.pid
 .dev_node.log

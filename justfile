@@ -11,6 +11,9 @@ default:
 build:
     mix deps.get
     mix compile
+    @# Ensure NIF .so exists (Rustler incremental build can skip it)
+    @test -f _build/dev/lib/blue_green/priv/native/socket_handoff.so \
+      || { echo "⚠ NIF missing, forcing rebuild…"; mix clean && mix compile; }
 
 # ──────────────────────────────────────────────
 #  Node lifecycle
