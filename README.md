@@ -11,17 +11,7 @@ Inspired by [Chris McCord's tweet thread](https://x.com/chris_mccord/status/2029
 
 ## Architecture
 
-```
-  TCP Client <──TCP:$PORT──> Orchestrator (main BEAM node)
-                                  │
-                    ┌─────────────┴─────────────┐
-                    │                           │
-               v1 (peer node)             v2 (peer node)
-               via OTP :peer              via OTP :peer
-                    │                           │
-                    └───── UDS SCM_RIGHTS ──────┘
-                           (FD handoff)
-```
+![](docs/img1.svg)
 
 - **Orchestrator** — Listens on `$PORT` (via [`phx-port`](https://github.com/chgeuer/phx-port), defaults to 4000), accepts clients, manages `:peer` child nodes
 - **Handler** — GenServer on each peer that owns a client socket and echoes with a version tag
