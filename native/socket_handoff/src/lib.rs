@@ -36,7 +36,7 @@ fn send_fd(path: String, fd: i32) -> NifResult<Atom> {
     connect(sock.as_raw_fd(), &addr)
         .map_err(|e| Error::Term(Box::new(format!("connect(): {e}"))))?;
 
-    // 1-byte data payload (required by sendmsg)
+    // SCM_RIGHTS requires at least 1 byte of "real" data in the message
     let data = [0u8; 1];
     let iov = [IoSlice::new(&data)];
 
@@ -71,8 +71,7 @@ fn recv_fd(path: String) -> NifResult<(Atom, i32)> {
     )
     .map_err(|e| Error::Term(Box::new(format!("socket(): {e}"))))?;
 
-    let addr = UnixAddr::new(path.as_str())
-        .map_err(|e| Error::Term(Box::new(format!("UnixAddr: {e}"))))?;
+    let addr = UnixAddr::new(path.as_str())        .map_err(|e| Error::Term(Box::new(format!("UnixAddr: {e}"))))?;
 
     bind(listener.as_raw_fd(), &addr)
         .map_err(|e| Error::Term(Box::new(format!("bind(): {e}"))))?;
@@ -83,7 +82,7 @@ fn recv_fd(path: String) -> NifResult<(Atom, i32)> {
     let conn_fd = accept(listener.as_raw_fd())
         .map_err(|e| Error::Term(Box::new(format!("accept(): {e}"))))?;
 
-    // Prepare buffers for recvmsg
+    // SCM_RIGHTS requires at least 1 byte of "real" data in the message
     let mut buf = [0u8; 1];
     let mut iov = [IoSliceMut::new(&mut buf)];
     let mut cmsg_buf = nix::cmsg_space!(std::os::unix::io::RawFd);

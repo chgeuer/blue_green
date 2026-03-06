@@ -7,13 +7,22 @@ defmodule BlueGreen.Handler do
   use GenServer
   require Logger
 
+  @type t() :: %__MODULE__{
+          socket: :socket.socket() | nil,
+          fd: non_neg_integer(),
+          version: pos_integer(),
+          uds_path: String.t()
+        }
+
   defstruct [:socket, :fd, :version, :uds_path]
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc "Tell this handler to hand off its socket to the receiver at `target_uds_path`."
+  @spec handoff(String.t()) :: :ok
   def handoff(target_uds_path) do
     GenServer.call(__MODULE__, {:handoff, target_uds_path}, 10_000)
   end

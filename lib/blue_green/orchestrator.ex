@@ -16,6 +16,13 @@ defmodule BlueGreen.Orchestrator do
 
   @default_port 4000
 
+  @type t() :: %__MODULE__{
+          listen_socket: :gen_tcp.socket(),
+          active_peer: pid(),
+          active_node: node(),
+          active_version: pos_integer()
+        }
+
   defstruct [
     :listen_socket,
     :active_peer,
@@ -23,11 +30,13 @@ defmodule BlueGreen.Orchestrator do
     :active_version
   ]
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc "Trigger a hot upgrade from current version to next version."
+  @spec upgrade() :: :ok
   def upgrade do
     GenServer.call(__MODULE__, :upgrade, 30_000)
   end
