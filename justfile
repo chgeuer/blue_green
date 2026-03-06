@@ -52,6 +52,16 @@ upgrade:
 #  Introspection helpers
 # ──────────────────────────────────────────────
 
+# Show which OS processes own TCP sockets on this port (one-shot)
+lsof:
+    @echo "Socket owners on port {{PORT}}:"
+    @echo "─────────────────────────────────────────────────────────────"
+    @lsof -i TCP:{{PORT}} -n -P +c0 2>/dev/null || echo "(no sockets open)"
+
+# Continuously watch socket ownership (refresh every 0.5s)
+watch-sockets:
+    watch -n 0.5 "lsof -i TCP:{{PORT}} -n -P +c0 2>/dev/null || echo '(no sockets open)'"
+
 # Show orchestrator state
 inspect-orch:
     {{dev}} rpc ':sys.get_state(BlueGreen.Orchestrator)'
@@ -100,10 +110,12 @@ demo:
     @echo "║        Blue/Green Hot Handoff Demo                      ║"
     @echo "╚══════════════════════════════════════════════════════════╝"
     @echo ""
-    @echo "  just start           Start node (orchestrator on :4000)"
+    @echo "  just start           Start node (orchestrator on :${PORT})"
     @echo "  just client          Connect test client  (new terminal)"
     @echo "  just upgrade         Trigger v1 → v2 hot handoff"
     @echo ""
+    @echo "  just lsof            Show socket owners on port :${PORT}"
+    @echo "  just watch-sockets   Continuously watch socket ownership"
     @echo "  just log             Tail the server log"
     @echo "  just inspect-orch    Show orchestrator state"
     @echo "  just inspect-handler Show handler state on active peer"

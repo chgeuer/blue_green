@@ -244,6 +244,36 @@ Output:
 [Client] #9 -> VERSION 2: ping 9
 ```
 
+## Observing socket ownership
+
+Use `just lsof` or `just watch-sockets` to see which OS processes hold the TCP connection in real time. Run `just watch-sockets` in a spare terminal while the demo is running:
+
+```bash
+# One-shot: who owns sockets on this port right now?
+just lsof
+
+# Continuous: watch ownership change during the upgrade (0.5s refresh)
+just watch-sockets
+```
+
+**Before upgrade** — the peer v1 owns the client socket (orchestrator released its copy via `dup2`):
+
+```
+COMMAND      PID  FD   NAME
+beam.smp   12345  20u  TCP *:4011 (LISTEN)           ← orchestrator
+beam.smp   12400  19u  TCP 127.0.0.1:4011->...:54321 (ESTABLISHED)  ← v1 peer
+```
+
+**After upgrade** — v2 now owns it, v1 is gone:
+
+```
+COMMAND      PID  FD   NAME
+beam.smp   12345  20u  TCP *:4011 (LISTEN)           ← orchestrator
+beam.smp   12500  19u  TCP 127.0.0.1:4011->...:54321 (ESTABLISHED)  ← v2 peer
+```
+
+The socket inode stays the same — the kernel socket object is the same, just held by a different process.
+
 ## Why this matters
 
 Traditional blue-green deployments at the infrastructure level are "cold" — the load balancer shifts traffic, but existing connections are severed or drained. This is painful for:
