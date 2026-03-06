@@ -76,7 +76,8 @@ fn recv_fd(path: String) -> NifResult<(Atom, i32)> {
     bind(listener.as_raw_fd(), &addr)
         .map_err(|e| Error::Term(Box::new(format!("bind(): {e}"))))?;
 
-    listen(&listener, Backlog::new(1).unwrap())
+    listen(&listener, Backlog::new(1)
+        .map_err(|_| Error::Term(Box::new("Backlog::new(1) failed".to_string())))?)
         .map_err(|e| Error::Term(Box::new(format!("listen(): {e}"))))?;
 
     let conn_fd = accept(listener.as_raw_fd())
@@ -88,12 +89,18 @@ fn recv_fd(path: String) -> NifResult<(Atom, i32)> {
     let mut cmsg_buf = nix::cmsg_space!(std::os::unix::io::RawFd);
 
     let msg = recvmsg::<UnixAddr>(conn_fd, &mut iov, Some(&mut cmsg_buf), MsgFlags::empty())
-        .map_err(|e| Error::Term(Box::new(format!("recvmsg(): {e}"))))?;
+        .map_err(|e| {
+            let _ = close(conn_fd);
+            Error::Term(Box::new(format!("recvmsg(): {e}")))
+        })?;
 
     // Extract the FD from SCM_RIGHTS
     let received_fd = msg
         .cmsgs()
-        .expect("failed to parse cmsgs")
+        .map_err(|_| {
+            let _ = close(conn_fd);
+            Error::Term(Box::new("failed to parse cmsgs".to_string()))
+        })?
         .find_map(|cmsg| {
             if let ControlMessageOwned::ScmRights(fds) = cmsg {
                 fds.into_iter().next()
@@ -101,7 +108,10 @@ fn recv_fd(path: String) -> NifResult<(Atom, i32)> {
                 None
             }
         })
-        .ok_or_else(|| Error::Term(Box::new("no SCM_RIGHTS in message".to_string())))?;
+        .ok_or_else(|| {
+            let _ = close(conn_fd);
+            Error::Term(Box::new("no SCM_RIGHTS in message".to_string()))
+        })?;
 
     // Cleanup: close UDS sockets and remove socket file
     let _ = close(conn_fd);
@@ -121,9 +131,35 @@ fn recv_fd(path: String) -> NifResult<(Atom, i32)> {
 ///
 /// We can't use gen_tcp.close or :socket.close because they call shutdown()
 /// which sends TCP FIN and kills the connection for all FD holders.
+///
+/// # Safety concern
+///
+/// Calling this with a wrong FD (e.g., the BEAM's epoll FD or a scheduler
+/// pipe) would silently replace it with /dev/null, corrupting the VM.
+/// We validate that the FD points to a socket before proceeding.
 #[rustler::nif]
 fn release_fd(fd: i32) -> NifResult<Atom> {
     use std::os::fd::IntoRawFd;
+
+    if fd < 0 {
+        return Err(Error::Term(Box::new(format!("invalid FD: {fd}"))));
+    }
+
+    // Verify this FD is actually a socket before we dup2 over it.
+    // This prevents accidentally destroying BEAM-internal FDs (epoll,
+    // scheduler pipes, file handles) if the caller passes a wrong number.
+    //
+    // SAFETY: We're probing the FD type, not taking ownership. The FD remains
+    // valid and owned by the BEAM's port/socket driver throughout.
+    let borrowed = unsafe { std::os::fd::BorrowedFd::borrow_raw(fd) };
+    match nix::sys::socket::getsockopt(&borrowed, nix::sys::socket::sockopt::SockType) {
+        Ok(_) => {} // It's a socket — safe to proceed
+        Err(_) => {
+            return Err(Error::Term(Box::new(format!(
+                "FD {fd} is not a socket — refusing to release (would corrupt the VM)"
+            ))));
+        }
+    }
 
     let devnull = std::fs::File::open("/dev/null")
         .map_err(|e| Error::Term(Box::new(format!("open /dev/null: {e}"))))?;
