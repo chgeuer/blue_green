@@ -1,0 +1,89 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1056 449" width="1056" height="449">
+  <defs>
+    <style class="style-fonts">
+      /* Theme Logic */
+      :root {
+        --canvas-fill: var(--excalidraw-canvas-bg, transparent);
+        --shape-fill: #ffffff;
+        --stroke-color: #1e1e1e;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --shape-fill: #2c2c2c;
+          --stroke-color: #f0f0f0;
+        }
+      }
+
+      /* Original Fonts */
+      @font-face { 
+        font-family: Excalifont; 
+        src: url(data:font/woff2;base64,d09GMgABAAAAAB0EAA4AAAAAMjAAAByvAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGiIbi0AcgXIGYACBLBEICswUuEQLXAABNgIkA4E0BCAFgxgHIBsRJ6OitDPuQfYXBzwZajzgrdUrEqLa4igR7PDbNrHTfRuvdfjChYrnEiFWpG1LVRdGSDI7RJc2uz45d9E5uVg9OLpcIDQunH7T1EGl1O+wYAq9U/LlSj+/v/d+QgN4MCRXptXFAKb0kJfH898f6Xn3/1A04wGLSCYg8W3txp1op1zgApWwNeyOMrgbJ2oR1OY/p6X0epNa/mBbgYHYnmSokAzBItrxwindwmkPd+n6df0gsB2SLENgwI4TXggMLX/pF3z+515tXxmEAnIVtixMhaoxaZqI+16J3k+JUkWgfkqgiIXsqVAAnJY3dr9zm5oTE3LH184qknMzxs+2GKKFR2Cge8LgGa3c0aPczGBmnScrdrLicE8DAQgAdAKWhiFILiASGsDPCfS2AKAKooVOZ0kZQLJ9bm0AkuNjZT2Q3F60NwEJFABAQ2rd7FubABkVwEWF+1PGSUiQoKhlM/SljwmJXozQn4GgEfco4r6LuIfVe/zphu/GAB8lkfphiHYsjecyYOCwbNRaiUkNkpWE/Jw+CrTolwRpH0q4UDcbsudwu5FIGjJUnCn5v52JXY/G5ui9UPckln9cwTA+DBFvmy/iYcHvlS81edvTw1Ledz4fJ4W4wFBQ0dAxcPHwCbTgZC4k3LjzICWjpKKm0SCglcvERoNhEtjDcknInZsQHYAFngyLFJwd1FwLR6DhYuG5Cagl3ka0RAVMQrsMs08giQIAAJyJVQobx0y55I15y2JROnthwcBscWCUAT1SKDlxBQNTZXgUIA3UdIPx3GAiN4REYNxcucFd3EhKN5wXJ0BLEqTd0Q2RJKv1Hrfn6lLAf3isaAJMAM8gPmvPFcMP9UpyjjAVH75rQLMxiUdCaeSQPDC8kBQlKiESxrgmCq7jXGLKY++Sp4y8ZxAPFAzlNWM+YR7JJYHz6QCAocmoXgZkluYEAIn7hUALIV6DqJBNjXNLCpiQ1tk6/wiD16rOsQDb3mLP0SRJGzUgDv7BoKEbaj2XkwKwXl9Jw1ewGDYOmYqVqlKrWbvO//+E2crbWyeZM2i5Gg1av8Wte2675apvnXfGaYcdctAB48aMpiE0uUgNAPh3bEGeLUiwpb85Md+TSMtcBBQQmCJ76VrzTDMzvusLNlIE/wXth8yAyULL78fAUtC3tezxtOssKq8odK9MMneHqRnBPf9gxqkZHS9L4oWdZXGSKU39bube56//ddxA4/D1Knmt9Y01r67aDwEFFLpubB6tWyo1fiUjBwVYvJ3gH9hSGkeAqWNhultQAn7djBsT7ek+eEWmXx1cZ8Wtn3J1+WL8oj/tnTpFKQXRWHDGKejG4TmMXz1r6Ra4Jk/Laj+xghuzrdKIV5lrfYN+VnIZK/5FtbHYB2/Eoa4XP/pluiIx73/td1gHrjZGaLtKeFfXneQX2/nBWlezGQUZCnCYROBYTpKYg59SuZPKUJcX5BUpTXGkO8tj3CCEUwqM7pgjkiEeJFddpY9j0+1oFduH8ZEbM8iiAngGOZbHmK5X7c05ggjXA90Zd/4/rkfyST7at9axUGURYhF/16ZbZL6mQSVX8c9FVd5Fj8bDnaIZn2ZtQOua3f6Md/HSTWG6o7QOqEcpoORLgvglxJeRU+AGiuREZBBk0N1dQF8Aojcv175VW0KtP35sOfOoV8ZuJ1ehCx5YXJAaM92YMQYZBfQaBTTVWMP3AP27O0yGSYLxWX22qAQrElA2R2ZJhlqtLloqJ6b76ptmc9bJMjUlcMkghHDOUUvXHYHTSZweyXIlhUVZoRSmh2n7gaxITpKTZGfdyqh1nBXJNE2hDdIzMePGMT5Rp3dm17Irx5TiHMnubGdjGSvemZkx3RibIsRJnuUZ/FqMeMZGHh23eSZAvNsCpB+16QqQmCKDriK29BFkNmgDidGl4LyrZjmG5Z8PhAjia0Gm6001xnsYoUx5LYSmC2EM0<truncated content>...); 
+      }
+    </style>
+  </defs>
+
+  <g stroke-linecap="round" transform="translate(146 332)">
+    <path d="M26.75 0 C84.71 -1.73, 139.35 4.16, 224.25 0 C238.84 3.5, 252.41 8.61, 251 26.75 C250.46 42.43, 253.03 57.32, 251 80.25 C253.36 95.38, 239.92 106.72, 224.25 107 C162.73 104.05, 101.34 104.03, 26.75 107 C10.6 104.01, 3.42 100.39, 0 80.25 C-0.52 61.22, 0.72 45.39, 0 26.75 C0.03 11.73, 7.19 -2.6, 26.75 0" stroke="none" stroke-width="0" fill="var(--shape-fill)"></path>
+    <path d="M26.75 0 C83.86 1.1, 140.28 0.62, 224.25 0 M26.75 0 C81.14 0.05, 134.16 -0.77, 224.25 0 M224.25 0 C240.58 1.12, 250.54 7.77, 251 26.75 M224.25 0 C241.79 -0.27, 249.12 9.86, 251 26.75 M251 26.75 C250.83 41.48, 251.28 57.13, 251 80.25 M251 26.75 C250.91 40.99, 251.34 56.11, 251 80.25 M251 80.25 C251.22 96.19, 243.43 107.85, 224.25 107 M251 80.25 C249.96 97.37, 241.88 108.24, 224.25 107 M224.25 107 C162.67 104.95, 100.15 103.91, 26.75 107 M224.25 107 C150.34 105.18, 74.76 104.45, 26.75 107 M26.75 107 C8.84 105.91, 0.41 98.83, 0 80.25 M26.75 107 C8.93 105.22, -0.93 96.71, 0 80.25 M0 80.25 C1.18 57.69, -0.68 37.82, 0 26.75 M0 80.25 C-0.32 58.94, 1.04 38.34, 0 26.75 M0 26.75 C1.4 7.11, 9.79 -1.65, 26.75 0 M0 26.75 C0 9.98, 9.28 1.28, 26.75 0" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+  </g>
+  <g transform="translate(167.97 360.5)">
+    <text x="103.53" y="17.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">version N (peer node)</text>
+    <text x="103.53" y="42.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">via OTP :peer</text>
+  </g>
+
+  <g stroke-linecap="round" transform="translate(795 327)">
+    <path d="M26.75 0 C103.58 -3.48, 173.16 -1.12, 224.25 0 C241.51 -0.87, 251.91 6.55, 251 26.75 C248.3 43.66, 251.24 60.02, 251 80.25 C253.87 97.54, 241.82 108.54, 224.25 107 C154.25 100.25, 84.93 106.02, 26.75 107 C9.42 108.44, -0.51 97.74, 0 80.25 C-2.29 64.76, 2.98 44.69, 0 26.75 C-0.1 5.85, 6.25 0.82, 26.75 0" stroke="none" stroke-width="0" fill="var(--shape-fill)"></path>
+    <path d="M26.75 0 C66.19 0.09, 107.5 -1.33, 224.25 0 M26.75 0 C98.5 1.67, 171.78 2.73, 224.25 0 M224.25 0 C240.52 -1.33, 250.15 7.18, 251 26.75 M224.25 0 C243.42 0.22, 253.15 8.45, 251 26.75 M251 26.75 C253.14 40.89, 253.43 57.46, 251 80.25 M251 26.75 C251.31 44.7, 250.87 64.6, 251 80.25 M251 80.25 C251.57 98.25, 241.67 106.36, 224.25 107 M251 80.25 C250.21 97.67, 243.89 104.96, 224.25 107 M224.25 107 C159.87 104.8, 97.5 106.59, 26.75 107 M224.25 107 C148.06 109.39, 73.9 108.49, 26.75 107 M26.75 107 C10.28 106.85, 1.69 99.1, 0 80.25 M26.75 107 C8.49 107.07, -1.85 97.25, 0 80.25 M0 80.25 C-0.48 61.13, -1.1 45.53, 0 26.75 M0 80.25 C0.31 62.38, -0.27 43.44, 0 26.75 M0 26.75 C-0.21 7.49, 8.52 -0.57, 26.75 0 M0 26.75 C-1.85 11.19, 10.95 0.7, 26.75 0" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+  </g>
+  <g transform="translate(807.5 355.5)">
+    <text x="113" y="17.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">version N+1 (peer node)</text>
+    <text x="113" y="42.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">via OTP :peer</text>
+  </g>
+
+  <g stroke-linecap="round" transform="translate(452 171)">
+    <path d="M26.75 0 C84.08 -0.38, 149.79 -0.86, 224.25 0 C242.29 3.26, 254.06 10.95, 251 26.75 C251.09 41.34, 251.2 58.83, 251 80.25 C254.01 97.45, 241.65 104.45, 224.25 107 C148.95 105.98, 78.59 103.34, 26.75 107 C11.09 107.59, 1.52 101.28, 0 80.25 C-2.65 61.89, -1.02 38.96, 0 26.75 C-2 9.99, 7.28 3.33, 26.75 0" stroke="none" stroke-width="0" fill="var(--shape-fill)"></path>
+    <path d="M26.75 0 C70.26 -3.47, 115.04 -2.8, 224.25 0 M26.75 0 C94.58 -1.14, 162.17 -1.53, 224.25 0 M224.25 0 C242.11 -0.13, 249.39 10.89, 251 26.75 M224.25 0 C242.83 0.32, 249.34 8.04, 251 26.75 M251 26.75 C248.7 47.19, 249.6 63.33, 251 80.25 M251 26.75 C252.01 44.54, 251.41 62.62, 251 80.25 M251 80.25 C250.16 96.42, 243.27 108.12, 224.25 107 M251 80.25 C248.78 97.19, 242.85 106.42, 224.25 107 M224.25 107 C181.56 107.56, 143.92 108.32, 26.75 107 M224.25 107 C179.88 108.79, 136.6 108.89, 26.75 107 M26.75 107 C7.06 105.51, -0.39 97.64, 0 80.25 M26.75 107 C8.83 105.27, 0.06 99.93, 0 80.25 M0 80.25 C0.41 63.7, -1.15 46.62, 0 26.75 M0 80.25 C-1.29 61.3, 0.37 43.18, 0 26.75 M0 26.75 C-1.73 10.47, 8.21 -0.41, 26.75 0 M0 26.75 C1.38 9.58, 6.67 -0.93, 26.75 0" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+  </g>
+  <g transform="translate(489.51 199.5)">
+    <text x="87.99" y="17.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">Orchestrator</text>
+    <text x="87.99" y="42.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">(main BEAM node)</text>
+  </g>
+
+  <g mask="url(#mask-ZCbxWZ-PUBqfH8orbwjTD)" stroke-linecap="round">
+    <path d="M788.9 380.2 L403.8 385.6" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+  </g>
+
+  <mask id="mask-ZCbxWZ-PUBqfH8orbwjTD">
+    <rect x="0" y="0" fill="#fff" width="1275" height="494"></rect>
+    <rect x="508" y="345" fill="#000" width="186" height="50"></rect>
+  </mask>
+
+  <g transform="translate(508.37 345.84)">
+    <text x="93.32" y="17.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">UDS SCM_RIGHTS</text>
+    <text x="93.32" y="42.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">(FD handoff)</text>
+  </g>
+
+  <g stroke-linecap="round" transform="translate(501 116)">
+    <path d="M18.25 0 C41.49 3.04, 65.06 3.5, 130.75 0 C143.84 1.08, 148.66 5.54, 149 18.25 C151.27 32.62, 149.16 46.7, 149 54.75 C152.59 66.33, 143.34 74.76, 130.75 73 C105.26 75.12, 73.22 73.7, 18.25 73 C8.34 75.71, -1.28 64.71, 0 54.75 C1.92 43.16, -0.74 27.71, 0 18.25 C-1.54 4.86, 2.88 -3.6, 18.25 0" stroke="none" stroke-width="0" fill="var(--shape-fill)"></path>
+    <path d="M18.25 0 C130.75 0 M130.75 0 C149 18.25 M149 18.25 C149 54.75 M149 54.75 C130.75 73 M130.75 73 C18.25 73 M18.25 73 C0 54.75 M0 54.75 C0 18.25 M0 18.25 C18.25 0" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+  </g>
+  <g transform="translate(513.23 140)">
+    <text x="62.27" y="17.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">TCP:$PORT</text>
+  </g>
+
+  <g stroke-linecap="round" transform="translate(10 10)">
+    <path d="M26.75 0 C104.64 -2.52, 177.89 -6.15, 224.25 0 C239.35 -2.21, 249.84 5.85, 251 26.75 C252.47 43.28, 254.02 64.9, 251 80.25 C250.36 97.66, 240.93 105.54, 224.25 107 C172.82 110.07, 118.31 106.6, 26.75 107 C11.53 103.47, 3.58 98.29, 0 80.25 C-1.77 65.67, -2.12 49.45, 0 26.75 C2.4 6.8, 9.63 -2.17, 26.75 0" stroke="none" stroke-width="0" fill="var(--shape-fill)"></path>
+    <path d="M26.75 0 C224.25 0 M224.25 0 C251 26.75 M251 26.75 C251 80.25 M251 80.25 C224.25 107 M224.25 107 C26.75 107 M26.75 107 C0 80.25 M0 80.25 C0 26.75 M0 26.75 C26.75 0" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+  </g>
+  <g transform="translate(108.36 51)">
+    <text x="27.14" y="17.62" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">Client</text>
+  </g>
+
+  <g stroke-linecap="round">
+    <path d="M267 63.5 L576 118" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+    <text x="454.49" y="67.7" font-family="Excalifont, sans-serif" font-size="20px" fill="var(--stroke-color)" text-anchor="middle">Connect</text>
+    <path d="M447 228 L283 325" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+    <path d="M709 227 L909 321" stroke="var(--stroke-color)" stroke-width="2" fill="none"></path>
+  </g>
+</svg>
