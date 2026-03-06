@@ -112,4 +112,31 @@ fn recv_fd(path: String) -> NifResult<(Atom, i32)> {
     Ok((atoms::ok(), received_fd))
 }
 
+/// Release the caller's reference to a socket FD after handoff.
+///
+/// Uses dup2() to atomically replace the FD with /dev/null. This:
+/// 1. Decrements the kernel socket's refcount (so it fully closes when
+///    the new owner is done — no lingering CLOSE_WAIT)
+/// 2. Leaves the Erlang port/socket driver with a valid FD (/dev/null)
+///    so GC doesn't accidentally close a reused FD number
+///
+/// We can't use gen_tcp.close or :socket.close because they call shutdown()
+/// which sends TCP FIN and kills the connection for all FD holders.
+#[rustler::nif]
+fn release_fd(fd: i32) -> NifResult<Atom> {
+    use std::os::fd::IntoRawFd;
+
+    let devnull = std::fs::File::open("/dev/null")
+        .map_err(|e| Error::Term(Box::new(format!("open /dev/null: {e}"))))?;
+    let devnull_fd = devnull.into_raw_fd();
+
+    nix::unistd::dup2(devnull_fd, fd)
+        .map_err(|e| Error::Term(Box::new(format!("dup2(): {e}"))))?;
+
+    close(devnull_fd)
+        .map_err(|e| Error::Term(Box::new(format!("close(): {e}"))))?;
+
+    Ok(atoms::ok())
+}
+
 rustler::init!("Elixir.BlueGreen.SocketHandoff");

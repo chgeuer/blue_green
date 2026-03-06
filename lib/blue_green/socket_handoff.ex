@@ -11,4 +11,13 @@ defmodule BlueGreen.SocketHandoff do
   @doc "Receive a file descriptor from UDS at `path` using SCM_RIGHTS. Blocks until a sender connects."
   @spec recv_fd(String.t()) :: {:ok, integer()} | no_return()
   def recv_fd(_path), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Release the caller's reference to a socket FD after handoff.
+
+  Uses dup2() to replace the FD with /dev/null, decrementing the kernel
+  socket's refcount without calling shutdown() (which would send TCP FIN).
+  """
+  @spec release_fd(integer()) :: :ok | no_return()
+  def release_fd(_fd), do: :erlang.nif_error(:nif_not_loaded)
 end

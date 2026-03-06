@@ -90,9 +90,11 @@ defmodule BlueGreen.Orchestrator do
     :ok = BlueGreen.SocketHandoff.send_fd(uds_path, fd)
     Logger.info("[Orchestrator] Sent FD #{fd} to v#{state.active_version}")
 
-    # Don't close the gen_tcp socket — gen_tcp.close calls shutdown() which
-    # would kill the TCP connection at the protocol level. We leak the port
-    # intentionally; the peer owns the connection via its SCM_RIGHTS-dup'd FD.
+    # Release the orchestrator's reference to the socket FD.
+    # dup2() replaces it with /dev/null — decrements the kernel socket's
+    # refcount without calling shutdown() (which would send TCP FIN).
+    :ok = BlueGreen.SocketHandoff.release_fd(fd)
+    Logger.info("[Orchestrator] Released FD #{fd} (dup2'd to /dev/null)")
 
     # Accept next client
     send(self(), :accept)

@@ -77,8 +77,11 @@ defmodule BlueGreen.Handler do
 
     :ok = BlueGreen.SocketHandoff.send_fd(target_uds_path, state.fd)
 
-    # Don't call :socket.close — it sends FIN which kills the TCP connection.
-    # Just drop our reference; the new owner has a dup'd FD from SCM_RIGHTS.
+    # Release our FD — dup2 to /dev/null so shutdown() isn't called.
+    # The peer is stopped shortly after, but this is still cleaner than
+    # leaking the FD until peer termination.
+    :ok = BlueGreen.SocketHandoff.release_fd(state.fd)
+    Logger.info("[Handler v#{state.version}] Released FD #{state.fd}")
 
     {:stop, :normal, :ok, %{state | socket: nil}}
   end

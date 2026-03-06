@@ -3,6 +3,12 @@
 A proof-of-concept demonstrating **zero-downtime TCP connection migration** between
 two Elixir BEAM nodes using Linux `SCM_RIGHTS` file descriptor passing.
 
+Inspired by [Chris McCord's tweet thread](https://x.com/chris_mccord/status/2029630330630508929) on `FlyDeploy.BlueGreen` — hot blue-green deploys using OTP `:peer` nodes.
+
+> **📖 [Read the full deep-dive: How it works →](docs/how-it-works.md)**
+>
+> Covers the architecture, `SCM_RIGHTS`, the `dup2(/dev/null)` trick for clean FD release, the upgrade flow, and why this matters for stateful connections.
+
 ## Architecture
 
 ```
@@ -76,7 +82,7 @@ You'll see:
 | Extract FD from gen_tcp socket | `:prim_inet.getfd/1` (port-based driver) |
 | Pass FD between OS processes | `sendmsg`/`recvmsg` with `SCM_RIGHTS` via Rust NIF |
 | Reconstruct socket from raw FD | `:socket.open(fd, %{domain: :inet, type: :stream, protocol: :tcp})` |
-| Avoid killing connection on close | Don't call `gen_tcp.close` or `:socket.close` — just leak the FD |
+| Avoid killing connection on close | `dup2()` FD to `/dev/null` via NIF — clean release without `shutdown()` |
 | Non-blocking handler for handoff | `:socket.recv/3` with `:nowait` + select messages |
 
 ## The "Relay Race" Deployment: Understanding Hot Blue-Green Deploys in Elixir
