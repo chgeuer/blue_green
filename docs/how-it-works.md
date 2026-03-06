@@ -198,6 +198,13 @@ This:
 - **Leaves** the Erlang port driver with a valid FD (`/dev/null`) — safe for GC
 - **Avoids** `shutdown()` — no TCP FIN sent
 
+> **Important:** This same technique is used in the Handler's disconnect path.
+> When `:socket.recv` returns `{:error, :closed}`, the Erlang `:socket` NIF
+> marks the socket as closed internally — making any subsequent `:socket.close/1`
+> a no-op that never calls `close()` on the real FD. This leaves the socket
+> stuck in CLOSE_WAIT. By calling `release_fd` on the raw FD instead, we
+> guarantee the kernel socket refcount reaches zero and TCP cleanup completes.
+
 ### 5. The hot upgrade
 
 When `BlueGreen.Orchestrator.upgrade()` is called:
@@ -219,6 +226,9 @@ just start
 
 # Terminal 2: connect the test client
 just client
+
+# Or use raw ncat to see it interactively
+just ncat
 
 # Terminal 3: trigger the upgrade (while client is running)
 just upgrade

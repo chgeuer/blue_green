@@ -47,6 +47,11 @@ rpc *EXPR:
 client:
     PORT={{PORT}} elixir test_client.exs
 
+# Connect with ncat — type messages and see VERSION prefix change after upgrade
+ncat:
+    @echo "Connecting to localhost:{{PORT}} with ncat (type messages, Ctrl-C to quit)…"
+    ncat localhost {{PORT}}
+
 # Trigger the hot upgrade v1 → v2
 upgrade:
     {{dev}} rpc 'BlueGreen.Orchestrator.upgrade()'

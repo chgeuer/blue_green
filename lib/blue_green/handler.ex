@@ -50,13 +50,15 @@ defmodule BlueGreen.Handler do
 
       {:error, reason} ->
         Logger.warning("[Handler v#{state.version}] recv error: #{inspect(reason)}")
-        {:stop, :normal, state}
+        cleanup_fd(state)
+        {:stop, :normal, %{state | socket: nil}}
     end
   end
 
   def handle_info({:"$socket", _socket, :abort, _info}, state) do
     Logger.warning("[Handler v#{state.version}] socket aborted")
-    {:stop, :normal, state}
+    cleanup_fd(state)
+    {:stop, :normal, %{state | socket: nil}}
   end
 
   def handle_info({:immediate_data, data}, state) do
@@ -68,7 +70,8 @@ defmodule BlueGreen.Handler do
 
   def handle_info({:recv_error, reason}, state) do
     Logger.warning("[Handler v#{state.version}] recv error: #{inspect(reason)}")
-    {:stop, :normal, state}
+    cleanup_fd(state)
+    {:stop, :normal, %{state | socket: nil}}
   end
 
   @impl true
@@ -89,8 +92,18 @@ defmodule BlueGreen.Handler do
   @impl true
   def terminate(_reason, %{socket: nil}), do: :ok
 
-  def terminate(_reason, %{socket: socket}) do
-    :socket.close(socket)
+  def terminate(_reason, %{socket: _socket} = state) do
+    cleanup_fd(state)
+  end
+
+  # Release the underlying FD directly via dup2(/dev/null).
+  # We can't rely on :socket.close here — when :socket.recv returns
+  # {:error, :closed}, the NIF marks the socket as closed internally,
+  # making the subsequent :socket.close a no-op that never calls close()
+  # on the actual FD. This leaves the socket stuck in CLOSE_WAIT.
+  defp cleanup_fd(%{fd: fd, version: version}) do
+    BlueGreen.SocketHandoff.release_fd(fd)
+    Logger.info("[Handler v#{version}] Released FD #{fd}")
   end
 
   defp request_recv(socket) do
