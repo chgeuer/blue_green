@@ -1,10 +1,8 @@
 defmodule BlueGreen.Orchestrator do
   @moduledoc """
-  Manages the TCP listener and coordinates blue/green deployments
-  using :peer nodes and SCM_RIGHTS FD passing.
-
-  The listen port is read from the `PORT` environment variable,
-  falling back to 4000 when unset.
+  Coordinates blue/green deployments using :peer nodes and SCM_RIGHTS
+  FD passing. TCP acceptance is handled by ThousandIsland via
+  `BlueGreen.ConnectionDispatcher`.
 
   ## Usage
 
@@ -14,20 +12,18 @@ defmodule BlueGreen.Orchestrator do
   use GenServer
   require Logger
 
-  @default_port 4000
-
   @type t() :: %__MODULE__{
-          listen_socket: :gen_tcp.socket(),
           active_peer: pid(),
           active_node: node(),
-          active_version: pos_integer()
+          active_version: pos_integer(),
+          active_handlers: MapSet.t(pid())
         }
 
   defstruct [
-    :listen_socket,
     :active_peer,
     :active_node,
-    :active_version
+    :active_version,
+    active_handlers: MapSet.new()
   ]
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -41,95 +37,79 @@ defmodule BlueGreen.Orchestrator do
     GenServer.call(__MODULE__, :upgrade, 30_000)
   end
 
+  @doc "Hand off a client socket FD to the active peer node."
+  @spec register_client(non_neg_integer()) :: :ok
+  def register_client(fd) do
+    GenServer.call(__MODULE__, {:register_client, fd}, 10_000)
+  end
+
   @impl true
   def init(_opts) do
-    tcp_port = port_from_env()
-
-    {:ok, lsock} = :gen_tcp.listen(tcp_port, [
-      :binary,
-      active: false,
-      reuseaddr: true,
-      packet: :line
-    ])
-    Logger.info("[Orchestrator] Listening on TCP port #{tcp_port}")
-
-    # Start v1 peer node (no receiver yet — waits for a client)
     {peer, node} = start_peer_node(1)
     Logger.info("[Orchestrator] Started v1 on #{node}")
 
     state = %__MODULE__{
-      listen_socket: lsock,
       active_peer: peer,
       active_node: node,
       active_version: 1
     }
 
-    # Start the acceptor loop
-    send(self(), :accept)
-
     {:ok, state}
   end
 
   @impl true
-  def handle_info(:accept, state) do
-    me = self()
-    spawn_link(fn ->
-      case :gen_tcp.accept(state.listen_socket) do
-        {:ok, client_socket} ->
-          :gen_tcp.controlling_process(client_socket, me)
-          send(me, {:new_client, client_socket})
-        {:error, :closed} ->
-          :ok
-        {:error, reason} ->
-          Logger.error("[Orchestrator] Accept error: #{inspect(reason)}")
-      end
-    end)
-    {:noreply, state}
-  end
+  def handle_call({:register_client, fd}, _from, state) do
+    Logger.info("[Orchestrator] Registering client FD=#{fd} with v#{state.active_version}")
 
-  def handle_info({:new_client, client_socket}, state) do
-    {:ok, fd} = BlueGreen.FdUtil.extract_fd(client_socket)
-    Logger.info("[Orchestrator] Client connected, FD=#{fd}, passing to v#{state.active_version}")
-
-    uds_path = uds_path_for(state.active_version)
-
-    # Start receiver on the peer, then send FD
-    start_receiver_on_peer(state.active_node, state.active_version, uds_path)
+    uds_path = unique_uds_path(state.active_version)
+    ref = start_receiver_on_peer(state.active_node, state.active_version, uds_path)
     Process.sleep(200)
     :ok = BlueGreen.SocketHandoff.send_fd(uds_path, fd)
-    Logger.info("[Orchestrator] Sent FD #{fd} to v#{state.active_version}")
 
-    # Release the orchestrator's reference to the socket FD.
-    # dup2() replaces it with /dev/null — decrements the kernel socket's
-    # refcount without calling shutdown() (which would send TCP FIN).
-    :ok = BlueGreen.SocketHandoff.release_fd(fd)
-    Logger.info("[Orchestrator] Released FD #{fd} (dup2'd to /dev/null)")
+    handler_pid = receive do
+      {^ref, {:handler_started, pid}} -> pid
+    after
+      5_000 -> raise "Handler failed to start on peer"
+    end
 
-    # Accept next client
-    send(self(), :accept)
+    Process.monitor(handler_pid)
+    Logger.info("[Orchestrator] Handler #{inspect(handler_pid)} tracking for v#{state.active_version}")
 
-    {:noreply, state}
+    {:reply, :ok, %{state | active_handlers: MapSet.put(state.active_handlers, handler_pid)}}
   end
 
   @impl true
   def handle_call(:upgrade, _from, %{active_version: v} = state) do
     new_version = v + 1
-    new_uds_path = uds_path_for(new_version)
     Logger.info("[Orchestrator] Upgrading v#{v} -> v#{new_version}")
 
     # 1. Start new peer node
     {new_peer, new_node} = start_peer_node(new_version)
     Logger.info("[Orchestrator] Started v#{new_version} on #{new_node}")
 
-    # 2. Start receiver on new node (blocks in spawned process until FD arrives)
-    start_receiver_on_peer(new_node, new_version, new_uds_path)
-    Process.sleep(200)
+    # 2. Hand off each active handler to the new peer
+    new_handlers =
+      state.active_handlers
+      |> Enum.map(fn old_handler_pid ->
+        new_uds_path = unique_uds_path(new_version)
 
-    # 3. Tell old handler to hand off its socket to new node's UDS
-    Logger.info("[Orchestrator] Telling v#{v} to hand off to #{new_uds_path}")
-    :erpc.call(state.active_node, BlueGreen.Handler, :handoff, [new_uds_path])
+        ref = start_receiver_on_peer(new_node, new_version, new_uds_path)
+        Process.sleep(200)
 
-    # 4. Stop old peer
+        Logger.info("[Orchestrator] Telling #{inspect(old_handler_pid)} to hand off to #{new_uds_path}")
+        BlueGreen.Handler.handoff(old_handler_pid, new_uds_path)
+
+        receive do
+          {^ref, {:handler_started, pid}} -> pid
+        after
+          5_000 -> raise "New handler failed to start during upgrade"
+        end
+      end)
+      |> MapSet.new()
+
+    Enum.each(new_handlers, &Process.monitor/1)
+
+    # 3. Stop old peer
     Process.sleep(500)
     :peer.stop(state.active_peer)
     Logger.info("[Orchestrator] Stopped v#{v} peer")
@@ -137,8 +117,14 @@ defmodule BlueGreen.Orchestrator do
     {:reply, :ok, %{state |
       active_peer: new_peer,
       active_node: new_node,
-      active_version: new_version
+      active_version: new_version,
+      active_handlers: new_handlers
     }}
+  end
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    {:noreply, %{state | active_handlers: MapSet.delete(state.active_handlers, pid)}}
   end
 
   # --- Private helpers ---
@@ -158,24 +144,24 @@ defmodule BlueGreen.Orchestrator do
   end
 
   defp start_receiver_on_peer(node, version, uds_path) do
+    ref = make_ref()
+    caller = self()
+
     :erpc.call(node, fn ->
       spawn(fn ->
         Logger.info("[Peer v#{version}] Waiting for FD on #{uds_path}")
         {:ok, fd} = BlueGreen.SocketHandoff.recv_fd(uds_path)
         Logger.info("[Peer v#{version}] Received FD #{fd}")
-        BlueGreen.Handler.start_link(fd: fd, version: version, uds_path: uds_path)
+        {:ok, pid} = BlueGreen.Handler.start_link(fd: fd, version: version, uds_path: uds_path)
+        send(caller, {ref, {:handler_started, pid}})
       end)
     end)
+
+    ref
   end
 
-  defp uds_path_for(version) do
-    "/tmp/blue_green_v#{version}_#{System.pid()}.sock"
-  end
-
-  defp port_from_env do
-    case System.get_env("PORT") do
-      nil -> @default_port
-      val -> String.to_integer(val)
-    end
+  defp unique_uds_path(version) do
+    id = System.unique_integer([:positive])
+    "/tmp/blue_green_v#{version}_#{System.pid()}_#{id}.sock"
   end
 end

@@ -22,7 +22,8 @@ defmodule BlueGreen.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:rustler, "~> 0.37.3"}
+      {:rustler, "~> 0.37.3"},
+      {:thousand_island, "~> 1.0"}
     ]
   end
 end

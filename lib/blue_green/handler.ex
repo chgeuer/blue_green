@@ -18,13 +18,13 @@ defmodule BlueGreen.Handler do
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts)
   end
 
-  @doc "Tell this handler to hand off its socket to the receiver at `target_uds_path`."
-  @spec handoff(String.t()) :: :ok
-  def handoff(target_uds_path) do
-    GenServer.call(__MODULE__, {:handoff, target_uds_path}, 10_000)
+  @doc "Tell a specific handler to hand off its socket to the receiver at `target_uds_path`."
+  @spec handoff(pid(), String.t()) :: :ok
+  def handoff(handler_pid, target_uds_path) do
+    GenServer.call(handler_pid, {:handoff, target_uds_path}, to_timeout(second: 10))
   end
 
   @impl true

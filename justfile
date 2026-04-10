@@ -74,9 +74,9 @@ watch-sockets:
 inspect-orch:
     {{dev}} rpc ':sys.get_state(BlueGreen.Orchestrator)'
 
-# Show handler state on the active peer node
+# Show handler states on the active peer node
 inspect-handler:
-    {{dev}} rpc ':erpc.call(Map.get(:sys.get_state(BlueGreen.Orchestrator), :active_node), :sys, :get_state, [BlueGreen.Handler])'
+    {{dev}} rpc 'state = :sys.get_state(BlueGreen.Orchestrator); Enum.map(state.active_handlers, fn pid -> :sys.get_state(pid) end)'
 
 # List connected peer nodes
 nodes:
